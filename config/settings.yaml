@@ -1,43 +1,158 @@
 # Wagent - Application Settings
+# Last updated: 2025-12-24
 
+# =============================================================================
+# サーバー設定
+# =============================================================================
 server:
   host: "127.0.0.1"
   port: 8765
   debug: true
+  # CORS設定
+  cors:
+    enabled: true
+    origins: ["*"]
 
+# =============================================================================
+# ブラウザ設定
+# =============================================================================
 browser:
-  # ヘッドレスモード (デバッグ時はfalseに)
+  # ヘッドレスモード（画面表示なし）
+  # true: バックグラウンド実行（本番環境推奨）
+  # false: ブラウザウィンドウを表示（デバッグ用）
   headless: false
-  # ブラウザのユーザーデータディレクトリ (ログイン状態を維持)
+  
+  # ブラウザのユーザーデータディレクトリ（ログイン状態を維持）
   user_data_dir: "./browser_data"
+  
   # ビューポートサイズ
   viewport:
     width: 1280
     height: 800
-  # スローモーション (ミリ秒、デバッグ用)
+  
+  # スローモーション（ミリ秒、デバッグ用）
   slow_mo: 0
+  
+  # ページ読み込みタイムアウト（ミリ秒）
+  timeout: 30000
+  
+  # ナビゲーション待機条件
+  # "load" | "domcontentloaded" | "networkidle" | "commit"
+  wait_until: "networkidle"
 
+# =============================================================================
+# ステルス・偽装設定
+# =============================================================================
 stealth:
-  # ボット検知回避を有効化
+  # ステルスモード全体の有効/無効
   enabled: true
+  
   # WebDriverフラグを隠す
   hide_webdriver: true
-  # ランダムなユーザーエージェント
-  random_user_agent: false
+  
+  # ユーザーエージェント設定
+  user_agent:
+    # カスタムUA使用（randomがtrueの場合は無視）
+    custom: null
+    # ランダムなユーザーエージェントを使用
+    random: false
+    # UAプリセット（random=falseかつcustom=nullの場合に使用）
+    # "chrome_windows" | "chrome_mac" | "edge_windows" | "firefox_windows"
+    preset: "chrome_windows"
+  
+  # 言語設定
+  locale: "ja-JP"
+  timezone: "Asia/Tokyo"
+  
+  # WebGL・Canvas指紋偽装
+  fingerprint:
+    enabled: true
+    webgl_vendor: "Google Inc. (NVIDIA)"
+    webgl_renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0, D3D11)"
+  
+  # プラグイン偽装
+  plugins:
+    enabled: true
+    count: 5
 
+# =============================================================================
+# 人間らしい挙動のシミュレーション
+# =============================================================================
+human_behavior:
+  # タイピング速度（ミリ秒/文字）
+  typing:
+    min_delay: 30
+    max_delay: 120
+    # 単語区切りでの追加遅延
+    word_pause_probability: 0.1
+    word_pause_min: 100
+    word_pause_max: 300
+  
+  # マウス移動
+  mouse:
+    # 自然なカーブ移動を有効化
+    natural_movement: true
+    # 移動速度（ピクセル/ステップ）
+    speed: 10
+  
+  # アクション間の遅延（ミリ秒）
+  action_delay:
+    min: 500
+    max: 1500
+  
+  # ランダムな休憩（長時間使用時）
+  random_pause:
+    enabled: false
+    interval_min: 60000   # 1分
+    interval_max: 300000  # 5分
+    duration_min: 1000
+    duration_max: 3000
+
+# =============================================================================
+# レートリミット設定
+# =============================================================================
 rate_limit:
+  # 有効/無効
+  enabled: true
   # 1分あたりの最大リクエスト数
   requests_per_minute: 10
-  # リクエスト間の最小間隔 (秒)
+  # リクエスト間の最小間隔（秒）
   min_interval: 3
+  # バースト許容数
+  burst_limit: 3
 
+# =============================================================================
+# セッション設定
+# =============================================================================
 session:
-  # セッション維持のための生存確認間隔 (秒)
+  # セッション維持のための生存確認間隔（秒）
   keepalive_interval: 300
-  # セッションタイムアウト (秒)
+  # セッションタイムアウト（秒）
   timeout: 3600
+  # セッション復旧の自動試行
+  auto_recovery: true
 
+# =============================================================================
+# ログ設定
+# =============================================================================
 logging:
+  # ログレベル: DEBUG | INFO | WARNING | ERROR | CRITICAL
   level: "DEBUG"
+  # ログファイルパス
   file: "./logs/wagent.log"
+  # ログローテーション
   rotation: "10 MB"
+  # 保持するログファイル数
+  retention: 5
+  # コンソール出力フォーマット
+  format: "<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan> - <level>{message}</level>"
+
+# =============================================================================
+# ユーザーエージェントプリセット
+# =============================================================================
+user_agent_presets:
+  chrome_windows: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  chrome_mac: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  edge_windows: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0"
+  firefox_windows: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"
+  safari_mac: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
