@@ -1,0 +1,43 @@
+# Wagent - Application Settings
+
+server:
+  host: "127.0.0.1"
+  port: 8765
+  debug: true
+
+browser:
+  # ヘッドレスモード (デバッグ時はfalseに)
+  headless: false
+  # ブラウザのユーザーデータディレクトリ (ログイン状態を維持)
+  user_data_dir: "./browser_data"
+  # ビューポートサイズ
+  viewport:
+    width: 1280
+    height: 800
+  # スローモーション (ミリ秒、デバッグ用)
+  slow_mo: 0
+
+stealth:
+  # ボット検知回避を有効化
+  enabled: true
+  # WebDriverフラグを隠す
+  hide_webdriver: true
+  # ランダムなユーザーエージェント
+  random_user_agent: false
+
+rate_limit:
+  # 1分あたりの最大リクエスト数
+  requests_per_minute: 10
+  # リクエスト間の最小間隔 (秒)
+  min_interval: 3
+
+session:
+  # セッション維持のための生存確認間隔 (秒)
+  keepalive_interval: 300
+  # セッションタイムアウト (秒)
+  timeout: 3600
+
+logging:
+  level: "DEBUG"
+  file: "./logs/wagent.log"
+  rotation: "10 MB"

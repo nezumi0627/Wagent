@@ -1,0 +1,25 @@
+# Wagent - Web-Agent Bridge Dependencies
+# 
+# Ryeを使用する場合は pyproject.toml を参照してください:
+#   rye sync
+#
+# pipを使用する場合:
+#   pip install -r requirements.txt
+
+# Core API
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+
+# Browser Automation
+playwright>=1.40.0
+playwright-stealth>=1.0.6
+
+# Utilities
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
+loguru>=0.7.2
+requests>=2.32.0
+
+# Optional: For cookie management
+browser-cookie3>=0.19.1

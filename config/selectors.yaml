@@ -1,0 +1,64 @@
+# Wagent - ChatGPT Web UI Selectors
+# Web UIのHTML構造が変わった場合はここを更新してください
+# Last updated: 2024-12
+
+chatgpt:
+  # Base URL
+  base_url: "https://chatgpt.com"
+  
+  # 入力関連
+  input:
+    # プロンプト入力エリア
+    textarea: "#prompt-textarea"
+    # 代替セレクタ
+    textarea_alt: "[data-id='root'] textarea"
+    # 送信ボタン
+    send_button: "[data-testid='send-button']"
+    send_button_alt: "button[aria-label='Send prompt']"
+  
+  # 出力関連
+  output:
+    # メッセージコンテナ
+    message_container: "[data-message-author-role='assistant']"
+    # メッセージ本文
+    message_content: ".markdown"
+    # 最新のレスポンス
+    latest_response: "[data-message-author-role='assistant']:last-child .markdown"
+  
+  # 状態検知
+  status:
+    # 生成中インジケータ
+    generating: "[data-testid='stop-button']"
+    generating_alt: "button[aria-label='Stop generating']"
+    # レート制限警告
+    rate_limit: "div:has-text('You've reached')"
+    # エラーメッセージ
+    error_message: ".error-message"
+  
+  # UIナビゲーション
+  navigation:
+    # 新しいチャット
+    new_chat: "[data-testid='new-chat-button']"
+    new_chat_alt: "nav a[href='/']"
+    # サイドバー
+    sidebar: "nav"
+    # モデルセレクター
+    model_selector: "[data-testid='model-switcher']"
+  
+  # 認証関連
+  auth:
+    # ログインボタン
+    login_button: "[data-testid='login-button']"
+    # ユーザーメニュー
+    user_menu: "[data-testid='profile-button']"
+    # ログイン済み判定
+    logged_in_indicator: "[data-testid='profile-button']"
+
+  # タイミング設定 (ミリ秒)
+  timing:
+    typing_delay_min: 30
+    typing_delay_max: 100
+    action_delay_min: 500
+    action_delay_max: 1500
+    response_poll_interval: 500
+    response_timeout: 120000  # 2分
