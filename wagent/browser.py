@@ -6,10 +6,10 @@ Stealth機能によるボット検知回避を含む
 import asyncio
 import random
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional
 
-from playwright.async_api import async_playwright, Browser, BrowserContext, Page
 from loguru import logger
+from playwright.async_api import Browser, BrowserContext, Page, async_playwright
 
 try:
     from playwright_stealth import stealth_async
@@ -201,7 +201,7 @@ class BrowserController:
             "chatgpt.timing.response_poll_interval", 500
         )
         generating_selector = config.get_selector("chatgpt.status.generating")
-        message_selector = config.get_selector("chatgpt.output.latest_response")
+        config.get_selector("chatgpt.output.latest_response")
 
         logger.info("Waiting for response...")
 

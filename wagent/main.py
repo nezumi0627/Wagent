@@ -3,8 +3,8 @@ Wagent - メインエントリーポイント
 サーバーの起動と対話モードの両方をサポート
 """
 
-import asyncio
 import argparse
+import asyncio
 import sys
 from pathlib import Path
 
@@ -96,10 +96,10 @@ def main():
 Examples:
   # APIサーバーを起動
   python -m wagent.main --server
-  
+
   # 対話モードで起動
   python -m wagent.main --interactive
-  
+
   # カスタムポートで起動
   python -m wagent.main --server --port 9000
         """,

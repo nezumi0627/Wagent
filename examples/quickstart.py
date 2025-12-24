@@ -44,7 +44,7 @@ def main():
     )
 
     if response["success"]:
-        print(f"\n✅ Response received:")
+        print("\n✅ Response received:")
         print(response["message"])
     else:
         print(f"\n❌ Error: {response.get('error')}")

@@ -3,7 +3,7 @@ Wagent Client - エージェントからWagent APIを呼び出すためのクラ
 """
 
 import time
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 import requests
 from loguru import logger

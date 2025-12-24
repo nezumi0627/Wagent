@@ -3,11 +3,9 @@ Wagent API Server - FastAPIベースのRESTサーバー
 外部エージェントからのリクエストを受け付け、ChatGPT Web UIを操作
 """
 
-import asyncio
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,9 +16,8 @@ from .config import config
 from .schemas import (
     ChatRequest,
     ChatResponse,
-    StatusResponse,
     SessionResponse,
-    ErrorResponse,
+    StatusResponse,
 )
 
 

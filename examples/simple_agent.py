@@ -2,8 +2,9 @@
 Example: Wagent APIを使用した簡単なエージェント
 """
 
-from wagent.client import WagentClient
 import time
+
+from wagent.client import WagentClient
 
 
 def simple_research_agent():
