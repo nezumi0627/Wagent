@@ -21,21 +21,21 @@ browser:
   # true: バックグラウンド実行（本番環境推奨）
   # false: ブラウザウィンドウを表示（デバッグ用）
   headless: false
-  
+
   # ブラウザのユーザーデータディレクトリ（ログイン状態を維持）
   user_data_dir: "./browser_data"
-  
+
   # ビューポートサイズ
   viewport:
     width: 1280
     height: 800
-  
+
   # スローモーション（ミリ秒、デバッグ用）
   slow_mo: 0
-  
+
   # ページ読み込みタイムアウト（ミリ秒）
   timeout: 30000
-  
+
   # ナビゲーション待機条件
   # "load" | "domcontentloaded" | "networkidle" | "commit"
   wait_until: "networkidle"
@@ -46,10 +46,10 @@ browser:
 stealth:
   # ステルスモード全体の有効/無効
   enabled: true
-  
+
   # WebDriverフラグを隠す
   hide_webdriver: true
-  
+
   # ユーザーエージェント設定
   user_agent:
     # カスタムUA使用（randomがtrueの場合は無視）
@@ -59,17 +59,17 @@ stealth:
     # UAプリセット（random=falseかつcustom=nullの場合に使用）
     # "chrome_windows" | "chrome_mac" | "edge_windows" | "firefox_windows"
     preset: "chrome_windows"
-  
+
   # 言語設定
   locale: "ja-JP"
   timezone: "Asia/Tokyo"
-  
+
   # WebGL・Canvas指紋偽装
   fingerprint:
     enabled: true
     webgl_vendor: "Google Inc. (NVIDIA)"
     webgl_renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0, D3D11)"
-  
+
   # プラグイン偽装
   plugins:
     enabled: true
@@ -87,24 +87,24 @@ human_behavior:
     word_pause_probability: 0.1
     word_pause_min: 100
     word_pause_max: 300
-  
+
   # マウス移動
   mouse:
     # 自然なカーブ移動を有効化
     natural_movement: true
     # 移動速度（ピクセル/ステップ）
     speed: 10
-  
+
   # アクション間の遅延（ミリ秒）
   action_delay:
     min: 500
     max: 1500
-  
+
   # ランダムな休憩（長時間使用時）
   random_pause:
     enabled: false
-    interval_min: 60000   # 1分
-    interval_max: 300000  # 5分
+    interval_min: 60000 # 1分
+    interval_max: 300000 # 5分
     duration_min: 1000
     duration_max: 3000
 

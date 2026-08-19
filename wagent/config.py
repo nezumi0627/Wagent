@@ -7,6 +7,7 @@ Pydanticを使用したバリデーション付き。
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar, Optional
@@ -340,8 +341,11 @@ class Config:
     @staticmethod
     def _parse_browser(data: dict[str, Any]) -> BrowserConfig:
         viewport_data = data.get("viewport", {})
+        headless = data.get("headless", False)
+        if os.environ.get("WAGENT_HEADLESS") == "true":
+            headless = True
         return BrowserConfig(
-            headless=data.get("headless", False),
+            headless=headless,
             user_data_dir=data.get("user_data_dir", "./browser_data"),
             viewport=ViewportConfig(
                 width=viewport_data.get("width", 1280),

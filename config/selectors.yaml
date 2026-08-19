@@ -5,7 +5,7 @@
 chatgpt:
   # Base URL
   base_url: "https://chatgpt.com"
-  
+
   # 入力関連
   input:
     # プロンプト入力エリア
@@ -15,7 +15,7 @@ chatgpt:
     # 送信ボタン
     send_button: "[data-testid='send-button']"
     send_button_alt: "button[aria-label='Send prompt']"
-  
+
   # 出力関連
   output:
     # メッセージコンテナ
@@ -24,7 +24,7 @@ chatgpt:
     message_content: ".markdown"
     # 最新のレスポンス
     latest_response: "[data-message-author-role='assistant']:last-child .markdown"
-  
+
   # 状態検知
   status:
     # 生成中インジケータ
@@ -34,7 +34,7 @@ chatgpt:
     rate_limit: "div:has-text('You've reached')"
     # エラーメッセージ
     error_message: ".error-message"
-  
+
   # UIナビゲーション
   navigation:
     # 新しいチャット
@@ -44,7 +44,7 @@ chatgpt:
     sidebar: "nav"
     # モデルセレクター
     model_selector: "[data-testid='model-switcher']"
-  
+
   # 認証関連
   auth:
     # ログインボタン
@@ -53,6 +53,14 @@ chatgpt:
     user_menu: "[data-testid='profile-button']"
     # ログイン済み判定
     logged_in_indicator: "[data-testid='profile-button']"
+    # ユーザー名セレクタ（カンマ区切りで複数指定）
+    username: "[data-testid='profile-button'], nav [class*='user'], aside [class*='profile']"
+    # ログインページインジケータ
+    login_page_indicators:
+      - "[data-testid='login-button']"
+      - "button:has-text('Log in')"
+      - "a[href*='/login']"
+      - "a[href*='/auth']"
 
   # タイミング設定 (ミリ秒)
   timing:
@@ -61,4 +69,4 @@ chatgpt:
     action_delay_min: 500
     action_delay_max: 1500
     response_poll_interval: 500
-    response_timeout: 120000  # 2分
+    response_timeout: 120000 # 2分

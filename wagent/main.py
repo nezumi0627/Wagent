@@ -77,37 +77,33 @@ async def run_interactive_mode() -> None:
         if not logged_in:
             logger.warning("Not logged in!")
             logger.info("Please log in manually in the browser window.")
-            logger.info("Press Enter when you've logged in...")
-            input()
+            logger.info("Waiting for login...")
 
-        print_interactive_help()
-
-        while True:
-            try:
-                prompt = input("\n[You] > ").strip()
-
-                if not prompt:
-                    continue
-
-                # コマンド処理
-                if prompt.startswith("/"):
-                    should_exit = await handle_command(prompt, browser)
-                    if should_exit:
-                        break
-                    continue
-
-                # プロンプト送信
-                await browser.send_prompt(prompt)
-
-                # レスポンス取得
-                response = await browser.wait_for_response()
-                print(f"\n[ChatGPT]\n{response}")
-
-            except KeyboardInterrupt:
-                print("\n")
+        # ログイン完了を自動検知
+        for i in range(120):
+            await asyncio.sleep(1)
+            logged_in = await browser.is_logged_in()
+            if logged_in:
                 break
-            except Exception as e:
-                logger.error(f"Error: {e}")
+            if i % 10 == 0 and i > 0:
+                current_url = browser.page.url
+                logger.info(f"Still waiting for login... ({i}s) URL: {current_url[:60]}")
+
+            if not logged_in:
+                logger.error("Login timeout (120s)")
+                screenshot_path = await browser.screenshot()
+                logger.info(f"Debug screenshot saved: {screenshot_path}")
+                logger.info("Current URL: " + browser.page.url)
+                return
+
+        username = await browser.get_username()
+        if username:
+            logger.success(f"Logged in as: {username}")
+        else:
+            logger.success("Logged in successfully")
+
+        # セッション維持のため少し待機
+        await asyncio.sleep(2)
 
     logger.info("Goodbye!")
 

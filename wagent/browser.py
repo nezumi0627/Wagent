@@ -41,18 +41,18 @@ class StealthModule(ABC):
 
 
 class PlaywrightStealthModule(StealthModule):
-    """playwright-stealthを使用したステルス機能"""
+    """playwright-stealth v2を使用したステルス機能"""
 
     def __init__(self) -> None:
         self._stealth_available = False
-        self._stealth_func = None
+        self._stealth_class = None
 
         try:
-            from playwright_stealth import stealth_async
+            from playwright_stealth.stealth import Stealth
 
-            self._stealth_func = stealth_async
+            self._stealth_class = Stealth
             self._stealth_available = True
-            logger.debug("playwright-stealth is available")
+            logger.debug("playwright-stealth v2 is available")
         except ImportError:
             logger.warning(
                 "playwright-stealth not installed. "
@@ -64,34 +64,49 @@ class PlaywrightStealthModule(StealthModule):
         return self._stealth_available
 
     async def apply(self, page: Page) -> None:
-        if self._stealth_available and self._stealth_func:
-            await self._stealth_func(page)
-            logger.debug("Stealth mode applied via playwright-stealth")
+        if self._stealth_available and self._stealth_class:
+            stealth = self._stealth_class()
+            await stealth.apply_stealth_async(page)
+            logger.debug("Stealth mode applied via playwright-stealth v2")
 
 
 class CustomStealthModule(StealthModule):
-    """カスタムステルススクリプト"""
+    """強化カスタムステルススクリプト"""
 
     STEALTH_SCRIPTS: list[str] = [
-        # WebDriver property を隠す
+        # WebDriver全般を隠す
         """
         Object.defineProperty(navigator, 'webdriver', {
             get: () => undefined
         });
         """,
-        # Chrome runtime を偽装
+        # documentElement の webdriver を隠す
+        """
+        Object.defineProperty(document, 'documentElement', {
+            get: () => undefined
+        });
+        """,
+        # Chrome runtime を完全に偽装
         """
         window.chrome = {
             runtime: {},
             loadTimes: function() {},
             csi: function() {},
-            app: {}
+            app: {},
+            webstore: {},
+            platform: 'Win32'
         };
         """,
-        # Plugins を偽装
+        # Plugins を実際に近い形で偽装
         """
         Object.defineProperty(navigator, 'plugins', {
-            get: () => [1, 2, 3, 4, 5]
+            get: () => [
+                { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer' },
+                { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai' },
+                { name: 'Native Client', filename: 'internal-nacl-plugin' },
+                { name: 'Widevine Content Decryption Module', filename: 'widevinecdmadapter.plugin' },
+                { name: 'Chromium PDF Plugin', filename: 'internal-pdf-viewer' }
+            ]
         });
         """,
         # Languages を設定
@@ -109,12 +124,93 @@ class CustomStealthModule(StealthModule):
             originalQuery(parameters)
         );
         """,
+        # HardwareConcurrency を設定
+        """
+        Object.defineProperty(navigator, 'hardwareConcurrency', {
+            get: () => 8
+        });
+        """,
+        # DeviceMemory を設定
+        """
+        Object.defineProperty(navigator, 'deviceMemory', {
+            get: () => 8
+        });
+        """,
+        # Platform を設定
+        """
+        Object.defineProperty(navigator, 'platform', {
+            get: () => 'Win32'
+        });
+        """,
+        # Vendor を設定
+        """
+        Object.defineProperty(navigator, 'vendor', {
+            get: () => 'Google Inc.'
+        });
+        """,
+        # User Agent Data を設定
+        """
+        if (navigator.userAgentData) {
+            Object.defineProperty(navigator, 'userAgentData', {
+                get: () => ({
+                    brands: [
+                        { brand: 'Chromium', version: '120' },
+                        { brand: 'Google Chrome', version: '120' }
+                    ],
+                    mobile: false,
+                    platform: 'Windows'
+                })
+            });
+        }
+        """,
+        # iframe contentWindow アクセスを許可
+        """
+        Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
+            get: function() {
+                return this.contentWindow;
+            }
+        });
+        """,
+        # WebGL の debug 情報を隠す
+        """
+        const getParameter = WebGLRenderingContext.prototype.getParameter;
+        WebGLRenderingContext.prototype.getParameter = function(parameter) {
+            if (parameter === 37445) return 'Google Inc. (NVIDIA)';
+            if (parameter === 37446) return 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3080 Direct3D11 vs_5_0 ps_5_0, D3D11)';
+            return getParameter.apply(this, [parameter]);
+        };
+        """,
+        # Permission status を上書き
+        """
+        const originalQuery = window.navigator.permissions.query;
+        window.navigator.permissions.query = (parameters) => (
+            parameters.name === 'notifications' ?
+            Promise.resolve({ state: 'default' }) :
+            originalQuery(parameters)
+        );
+        """,
+        # Notification permission を設定
+        """
+        Object.defineProperty(Notification, 'permission', {
+            get: () => 'default'
+        });
+        """,
+        # toString を上書き（一部検出回避）
+        """
+        const originalToString = Function.prototype.toString;
+        Function.prototype.toString = function() {
+            if (this === window.navigator.permissions.query) {
+                return 'function query() { [native code] }';
+            }
+            return originalToString.call(this);
+        };
+        """,
     ]
 
     async def apply(self, page: Page) -> None:
         for script in self.STEALTH_SCRIPTS:
             await page.add_init_script(script)
-        logger.debug("Custom stealth scripts applied")
+        logger.debug("Enhanced custom stealth scripts applied")
 
 
 # =============================================================================
@@ -230,6 +326,7 @@ class BrowserController:
         logger.info("Initializing browser controller...")
 
         playwright = await async_playwright().start()
+        context = None
 
         try:
             # ブラウザ設定を構築
@@ -308,7 +405,8 @@ class BrowserController:
 
         finally:
             logger.info("Closing browser controller...")
-            await context.close()
+            if context is not None:
+                await context.close()
             await playwright.stop()
 
     # =========================================================================
@@ -342,14 +440,70 @@ class BrowserController:
         await self._human.action_delay()
 
     async def is_logged_in(self) -> bool:
-        """ログイン状態を確認"""
+        """ログイン状態を確認（複数指標で判定）"""
+        current_url = self._page.url
+
+        # URLベース判定: ログイン後は /c/ や /d/ で始まる
+        if "/c/" in current_url or "/d/" in current_url:
+            return True
+
+        # チャット入力エリアの存在確認
+        chat_input_selectors = [
+            "#prompt-textarea",
+            "[data-id='root'] textarea",
+            "textarea[placeholder*='Message']",
+            "textarea[placeholder*='Send a message']",
+        ]
+        for selector in chat_input_selectors:
+            try:
+                element = await self._page.query_selector(selector)
+                if element:
+                    return True
+            except Exception:
+                continue
+
+        # ログインページの要素が存在しないか確認
+        login_indicators = [
+            "[data-testid='login-button']",
+            "button:has-text('Log in')",
+            "a[href*='/login']",
+            "a[href*='/auth']",
+        ]
+        for selector in login_indicators:
+            try:
+                element = await self._page.query_selector(selector)
+                if element:
+                    return False
+            except Exception:
+                continue
+
+        # プロファイルボタンの存在確認
+        profile_selectors = [
+            "[data-testid='profile-button']",
+            "[data-testid='account-menu-button']",
+            "nav [class*='user']",
+            "aside [class*='profile']",
+            "[class*='sidebar'] button[aria-label*='profile']",
+            "[class*='sidebar'] button[aria-label*='Account']",
+        ]
+        for selector in profile_selectors:
+            try:
+                element = await self._page.query_selector(selector)
+                if element:
+                    return True
+            except Exception:
+                continue
+
+        # モデルセレクターの存在確認
         try:
-            indicator = self._selectors.get("chatgpt.auth.logged_in_indicator")
-            if indicator:
-                element = await self._page.query_selector(indicator)
-                return element is not None
-        except Exception as e:
-            logger.error(f"Error checking login status: {e}")
+            model_selector = await self._page.query_selector(
+                "[data-testid='model-switcher'], [class*='model-selector']"
+            )
+            if model_selector:
+                return True
+        except Exception:
+            pass
+
         return False
 
     # =========================================================================
@@ -513,3 +667,51 @@ class BrowserController:
     async def evaluate_script(self, script: str) -> any:
         """JavaScriptを実行"""
         return await self._page.evaluate(script)
+
+    async def get_username(self) -> Optional[str]:
+        """
+        ログインユーザー名を取得
+
+        Returns:
+            ユーザー名（メールアドレス等）、取得不可時はNone
+        """
+        username_selectors = self._selectors.get("chatgpt.auth.username", "").split(",")
+        
+        for selector in username_selectors:
+            selector = selector.strip()
+            if not selector:
+                continue
+            try:
+                element = await self._page.query_selector(selector)
+                if element:
+                    text = await element.inner_text()
+                    if text and text.strip():
+                        return text.strip()
+            except Exception:
+                continue
+
+        # JavaScriptで直接取得を試みる
+        try:
+            username = await self._page.evaluate("""
+                () => {
+                    const selectors = [
+                        '[data-testid="profile-button"]',
+                        'nav [class*="user"]',
+                        '[class*="sidebar"] [class*="user"]',
+                        'aside [class*="profile"]'
+                    ];
+                    for (const sel of selectors) {
+                        const el = document.querySelector(sel);
+                        if (el && el.textContent.trim()) {
+                            return el.textContent.trim();
+                        }
+                    }
+                    return null;
+                }
+            """)
+            if username:
+                return username
+        except Exception:
+            pass
+
+        return None

@@ -15,12 +15,12 @@ Playwright によるブラウザ自動化を用いて Web UI にログイン・�
 
 ## ✨ 特徴
 
-* 🌐 **Web版 ChatGPT を API 的に利用**
-* 🔐 **ログイン状態を永続化**（再ログイン不要）
-* 🧠 **会話コンテキストを維持 / リセット可能**
-* 🕹 **対話モード + API サーバーモード両対応**
-* ⚙️ **FastAPI ベースで拡張しやすい設計**
-* 🧪 **Playwright による堅牢な UI 操作**
+- 🌐 **Web版 ChatGPT を API 的に利用**
+- 🔐 **ログイン状態を永続化**（再ログイン不要）
+- 🧠 **会話コンテキストを維持 / リセット可能**
+- 🕹 **対話モード + API サーバーモード両対応**
+- ⚙️ **FastAPI ベースで拡張しやすい設計**
+- 🧪 **Playwright による堅牢な UI 操作**
 
 ---
 
@@ -36,9 +36,9 @@ flowchart LR
     Wagent <-->|Playwright| ChatGPT
 ```
 
-* **Agent**: curl / Python / Bot / 自作クライアント
-* **Wagent**: セッション管理 + UI 操作 + API 提供
-* **ChatGPT Web UI**: 実際に操作されるブラウザ
+- **Agent**: curl.exe / Python / Bot / 自作クライアント
+- **Wagent**: セッション管理 + UI 操作 + API 提供
+- **ChatGPT Web UI**: 実際に操作されるブラウザ
 
 ---
 
@@ -104,13 +104,13 @@ python -m wagent.main --server --host 0.0.0.0 --port 8765
 
 ## 📡 API エンドポイント
 
-| Method | Path             | Description     |
-| ------ | ---------------- | --------------- |
-| POST   | `/v1/chat`       | メッセージ送信 & 応答取得  |
+| Method | Path             | Description                    |
+| ------ | ---------------- | ------------------------------ |
+| POST   | `/v1/chat`       | メッセージ送信 & 応答取得      |
 | GET    | `/v1/status`     | ログイン状態・ブラウザ生存確認 |
-| DELETE | `/v1/session`    | 会話コンテキストのリセット   |
-| GET    | `/v1/screenshot` | 現在のブラウザ画面を取得    |
-| GET    | `/health`        | ヘルスチェック         |
+| DELETE | `/v1/session`    | 会話コンテキストのリセット     |
+| GET    | `/v1/screenshot` | 現在のブラウザ画面を取得       |
+| GET    | `/health`        | ヘルスチェック                 |
 
 ---
 
@@ -119,21 +119,19 @@ python -m wagent.main --server --host 0.0.0.0 --port 8765
 ### メッセージ送信
 
 ```bash
-curl -X POST http://127.0.0.1:8765/v1/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Hello, ChatGPT!", "new_conversation": false}'
+curl.exe -X POST "http://127.0.0.1:8765/v1/chat" -H "Content-Type: application/json" -d '{"message":"Hello, ChatGPT!","new_conversation":false}'
 ```
 
 ### ステータス確認
 
 ```bash
-curl http://127.0.0.1:8765/v1/status
+curl.exe http://127.0.0.1:8765/v1/status
 ```
 
 ### 会話リセット
 
 ```bash
-curl -X DELETE http://127.0.0.1:8765/v1/session
+curl.exe -X DELETE http://127.0.0.1:8765/v1/session
 ```
 
 ---
@@ -222,10 +220,10 @@ Wagent/
 
 ## 🛣 今後の予定（Ideas）
 
-* ストリーミング応答対応
-* マルチセッション対応
-* プラグイン / Agent フック機構
-* Docker 対応
+- ストリーミング応答対応
+- マルチセッション対応
+- プラグイン / Agent フック機構
+- Docker 対応
 
 ---
 
