@@ -53,6 +53,10 @@ class ChatRequest(BaseModel):
         default=False,
         description="新しい会話を開始するかどうか",
     )
+    chat_id: Optional[str] = Field(
+        default=None,
+        description="開くチャットID（指定時はそのチャットを開く）",
+    )
     timeout_ms: Optional[int] = Field(
         default=None,
         ge=1000,
@@ -81,6 +85,7 @@ class ChatRequest(BaseModel):
             "example": {
                 "message": "Pythonでフィボナッチ数列を計算するコードを書いてください",
                 "new_conversation": False,
+                "chat_id": "abc123",
                 "timeout_ms": 60000,
                 "files": ["/path/to/image.png", "/path/to/document.pdf"],
                 "web_search": True,
@@ -187,3 +192,58 @@ class ErrorResponse(BaseResponse):
     error: str = Field(..., description="エラーメッセージ")
     detail: Optional[str] = Field(None, description="詳細情報")
     error_code: Optional[str] = Field(None, description="エラーコード")
+
+
+# =============================================================================
+# セッション・チャット関連スキーマ
+# =============================================================================
+
+
+class SessionInfo(BaseModel):
+    """セッション情報"""
+
+    session_id: str = Field(..., description="セッションID")
+    name: str = Field(..., description="セッション名")
+    user_data_dir: str = Field(..., description="プロファイルディレクトリ")
+    created_at: str = Field(..., description="作成日時")
+    last_used: str = Field(..., description="最終使用日時")
+    is_active: bool = Field(default=False, description="アクティブかどうか")
+
+
+class SessionListResponse(BaseResponse):
+    """セッション一覧レスポンス"""
+
+    sessions: list[SessionInfo] = Field(default_factory=list, description="セッション一覧")
+
+
+class ChatInfo(BaseModel):
+    """チャット情報"""
+
+    chat_id: str = Field(..., description="チャットID")
+    session_id: str = Field(..., description="セッションID")
+    title: Optional[str] = Field(None, description="チャットタイトル")
+    created_at: str = Field(..., description="作成日時")
+    updated_at: str = Field(..., description="更新日時")
+
+
+class ChatListResponse(BaseResponse):
+    """チャット一覧レスポンス"""
+
+    chats: list[ChatInfo] = Field(default_factory=list, description="チャット一覧")
+
+
+class MessageInfo(BaseModel):
+    """メッセージ情報"""
+
+    id: int = Field(..., description="メッセージID")
+    chat_id: str = Field(..., description="チャットID")
+    role: str = Field(..., description="role: user/assistant")
+    content: str = Field(..., description="メッセージ内容")
+    timestamp: str = Field(..., description="送信時刻")
+
+
+class MessageListResponse(BaseResponse):
+    """メッセージ一覧レスポンス"""
+
+    messages: list[MessageInfo] = Field(default_factory=list, description="メッセージ一覧")
+

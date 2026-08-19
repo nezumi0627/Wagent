@@ -299,25 +299,25 @@ class BrowserController:
         self._is_closed = False
 
     @classmethod
-    @asynccontextmanager
-    async def create(
+    async def create_instance(
         cls,
         config: Optional[Config] = None,
         selectors: Optional[Selectors] = None,
-    ) -> AsyncGenerator[BrowserController, None]:
+        user_data_dir: Optional[str] = None,
+    ) -> BrowserController:
         """
-        ブラウザコントローラーを作成するファクトリメソッド
+        ブラウザコントローラーを作成
 
         Args:
             config: 設定オブジェクト（省略時は自動読み込み）
             selectors: セレクタオブジェクト（省略時は自動読み込み）
+            user_data_dir: ユーザーデータディレクトリ（省略時は設定を使用）
 
-        Yields:
+        Returns:
             BrowserController インスタンス
         """
         from wagent.config import Config, Selectors
 
-        # 設定を読み込み
         if config is None:
             config = Config.load()
         if selectors is None:
@@ -329,11 +329,12 @@ class BrowserController:
         context = None
 
         try:
-            # ブラウザ設定を構築
-            user_data_path = Path(config.browser.user_data_dir).absolute()
+            if user_data_dir is None:
+                user_data_dir = config.browser.user_data_dir
+
+            user_data_path = Path(user_data_dir).absolute()
             user_data_path.mkdir(parents=True, exist_ok=True)
 
-            # ランチ引数
             browser_args = [
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
@@ -343,11 +344,9 @@ class BrowserController:
             if config.stealth.hide_webdriver:
                 browser_args.append("--disable-automation")
 
-            # ユーザーエージェント
             user_agent = config.get_user_agent()
             logger.debug(f"Using User-Agent: {user_agent[:50]}...")
 
-            # 永続コンテキストでブラウザを起動
             context = await playwright.chromium.launch_persistent_context(
                 user_data_dir=str(user_data_path),
                 headless=config.browser.headless,
@@ -363,10 +362,8 @@ class BrowserController:
                 ignore_default_args=["--enable-automation"],
             )
 
-            # ページを取得または作成
             page = context.pages[0] if context.pages else await context.new_page()
 
-            # ステルスモジュールを適用
             stealth: StealthModule
             if config.stealth.enabled:
                 pw_stealth = PlaywrightStealthModule()
@@ -376,9 +373,8 @@ class BrowserController:
                     stealth = CustomStealthModule()
                 await stealth.apply(page)
             else:
-                stealth = CustomStealthModule()  # ダミー
+                stealth = CustomStealthModule()
 
-            # 人間挙動シミュレーター
             hb = config.human_behavior
             human = HumanBehaviorSimulator(
                 typing_min_delay=hb.typing.min_delay,
@@ -401,13 +397,56 @@ class BrowserController:
             )
 
             logger.info("Browser controller initialized")
-            yield controller
+            return controller
 
-        finally:
-            logger.info("Closing browser controller...")
+        except Exception:
             if context is not None:
                 await context.close()
             await playwright.stop()
+            raise
+
+    @classmethod
+    @asynccontextmanager
+    async def create(
+        cls,
+        config: Optional[Config] = None,
+        selectors: Optional[Selectors] = None,
+        user_data_dir: Optional[str] = None,
+    ) -> AsyncGenerator[BrowserController, None]:
+        """
+        ブラウザコントローラーを作成するファクトリメソッド（コンテキストマネージャー）
+
+        Args:
+            config: 設定オブジェクト（省略時は自動読み込み）
+            selectors: セレクタオブジェクト（省略時は自動読み込み）
+            user_data_dir: ユーザーデータディレクトリ（省略時は設定を使用）
+
+        Yields:
+            BrowserController インスタンス
+        """
+        controller = await cls.create_instance(config, selectors, user_data_dir)
+        try:
+            yield controller
+        finally:
+            await controller.stop()
+
+    async def stop(self) -> None:
+        """ブラウザコントローラーを停止"""
+        if self._is_closed:
+            return
+        self._is_closed = True
+
+        logger.info("Closing browser controller...")
+        try:
+            if self._context is not None:
+                await self._context.close()
+                self._context = None
+                self._page = None
+            if self._playwright is not None:
+                await self._playwright.stop()
+                self._playwright = None
+        except Exception as e:
+            logger.error(f"Error during browser shutdown: {e}")
 
     # =========================================================================
     # プロパティ
@@ -634,6 +673,62 @@ class BrowserController:
             # URLで直接移動
             base_url = self._selectors.get("chatgpt.base_url", "https://chatgpt.com")
             await self._page.goto(base_url, wait_until="networkidle")
+
+    # =========================================================================
+    # チャット操作
+    # =========================================================================
+
+    async def open_chat(self, chat_id: str) -> bool:
+        """
+        特定のチャットを開く
+
+        Args:
+            chat_id: チャットID
+
+        Returns:
+            成功した場合True
+        """
+        if not self._page:
+            return False
+
+        base_url = self._selectors.get("chatgpt.base_url", "https://chatgpt.com")
+        chat_url = f"{base_url}/c/{chat_id}"
+
+        try:
+            await self._page.goto(
+                chat_url,
+                wait_until=self._config.browser.wait_until,
+                timeout=self._config.browser.timeout,
+            )
+            await self._human.action_delay()
+            logger.info(f"Opened chat: {chat_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to open chat {chat_id}: {e}")
+            return False
+
+    async def get_current_chat_id(self) -> Optional[str]:
+        """
+        現在開いているチャットのIDを取得
+
+        Returns:
+            チャットID、取得できない場合はNone
+        """
+        if not self._page:
+            return None
+
+        url = self._page.url
+        import re
+
+        match = re.search(r"/c/([^/?]+)", url)
+        if match:
+            return match.group(1)
+
+        match = re.search(r"/d/([^/?]+)", url)
+        if match:
+            return match.group(1)
+
+        return None
 
     # =========================================================================
     # ファイルアップロード

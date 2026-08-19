@@ -165,6 +165,14 @@ class SessionConfig:
 
 
 @dataclass(frozen=True)
+class DatabaseConfig:
+    """データベース設定"""
+
+    path: str = "./data/wagent.db"
+    sessions_dir: str = "./sessions"
+
+
+@dataclass(frozen=True)
 class LoggingConfig:
     """ログ設定"""
 
@@ -262,6 +270,7 @@ class Config:
         human_behavior: HumanBehaviorConfig,
         rate_limit: RateLimitConfig,
         session: SessionConfig,
+        database: DatabaseConfig,
         logging: LoggingConfig,
     ) -> None:
         self.server = server
@@ -270,6 +279,7 @@ class Config:
         self.human_behavior = human_behavior
         self.rate_limit = rate_limit
         self.session = session
+        self.database = database
         self.logging = logging
 
     @classmethod
@@ -322,6 +332,7 @@ class Config:
             human_behavior=cls._parse_human_behavior(data.get("human_behavior", {})),
             rate_limit=cls._parse_rate_limit(data.get("rate_limit", {})),
             session=cls._parse_session(data.get("session", {})),
+            database=cls._parse_database(data.get("database", {})),
             logging=cls._parse_logging(data.get("logging", {})),
         )
 
@@ -432,6 +443,13 @@ class Config:
             keepalive_interval=data.get("keepalive_interval", 300),
             timeout=data.get("timeout", 3600),
             auto_recovery=data.get("auto_recovery", True),
+        )
+
+    @staticmethod
+    def _parse_database(data: dict[str, Any]) -> DatabaseConfig:
+        return DatabaseConfig(
+            path=data.get("path", "./data/wagent.db"),
+            sessions_dir=data.get("sessions_dir", "./sessions"),
         )
 
     @staticmethod
