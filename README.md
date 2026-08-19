@@ -122,6 +122,18 @@ python -m wagent.main --server --host 0.0.0.0 --port 8765
 curl.exe -X POST "http://127.0.0.1:8765/v1/chat" -H "Content-Type: application/json" -d '{"message":"Hello, ChatGPT!","new_conversation":false}'
 ```
 
+### ファイルアップロード
+
+```bash
+curl.exe -X POST "http://127.0.0.1:8765/v1/chat" -H "Content-Type: application/json" -d '{"message":"この画像を説明してください","files":["C:\\Users\\ren11\\Pictures\\photo.png"]}'
+```
+
+### ウェブ検索を有効化
+
+```bash
+curl.exe -X POST "http://127.0.0.1:8765/v1/chat" -H "Content-Type: application/json" -d '{"message":"今日の天気は？","web_search":true}'
+```
+
 ### ステータス確認
 
 ```bash
@@ -146,11 +158,19 @@ client = WagentClient()
 status = client.status()
 print("Logged in:", status["logged_in"])
 
+# メッセージ送信
 res = client.chat("Pythonでフィボナッチ数列を書いて")
 print(res["message"])
 
-res = client.chat("新しい話題です", new_conversation=True)
+# ファイルアップロード
+res = client.chat("この画像を説明してください", files=["C:/Users/ren11/Pictures/photo.png"])
+print(res["message"])
 
+# ウェブ検索を有効化
+res = client.chat("今日の天気は？", web_search=True)
+print(res["message"])
+
+# 便利関数
 answer = ask_chatgpt("1+1は？")
 print(answer)
 ```

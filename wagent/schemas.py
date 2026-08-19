@@ -59,6 +59,14 @@ class ChatRequest(BaseModel):
         le=300000,
         description="レスポンス待機タイムアウト（ミリ秒）",
     )
+    files: Optional[list[str]] = Field(
+        default=None,
+        description="アップロードするファイルパスのリスト",
+    )
+    web_search: bool = Field(
+        default=False,
+        description="ウェブ検索を有効にするかどうか",
+    )
 
     @field_validator("message")
     @classmethod
@@ -74,6 +82,8 @@ class ChatRequest(BaseModel):
                 "message": "Pythonでフィボナッチ数列を計算するコードを書いてください",
                 "new_conversation": False,
                 "timeout_ms": 60000,
+                "files": ["/path/to/image.png", "/path/to/document.pdf"],
+                "web_search": True,
             }
         }
 

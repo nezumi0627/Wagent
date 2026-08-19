@@ -224,6 +224,22 @@ async def send_chat(request: ChatRequest) -> ChatResponse:
         if request.new_conversation:
             await app_state.browser.new_chat()
 
+        # ウェブ検索を有効化
+        if request.web_search:
+            await app_state.browser.toggle_web_search(True)
+
+        # ファイルアップロード
+        if request.files:
+            uploaded = await app_state.browser.upload_files(request.files)
+            if not uploaded:
+                return ChatResponse(
+                    success=False,
+                    error="File upload failed",
+                    status=ResponseStatus.ERROR,
+                    elapsed_seconds=time.time() - start_time,
+                    prompt_length=prompt_length,
+                )
+
         # プロンプト送信
         await app_state.browser.send_prompt(request.message)
 

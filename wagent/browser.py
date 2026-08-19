@@ -636,6 +636,100 @@ class BrowserController:
             await self._page.goto(base_url, wait_until="networkidle")
 
     # =========================================================================
+    # ファイルアップロード
+    # =========================================================================
+
+    async def upload_files(self, file_paths: list[str]) -> bool:
+        """
+        ファイルをアップロード
+
+        Args:
+            file_paths: アップロードするファイルパスのリスト
+
+        Returns:
+            成功した場合True
+        """
+        if not file_paths:
+            return True
+
+        logger.info(f"Uploading {len(file_paths)} files...")
+
+        # ファイルの存在確認
+        import os
+        for path in file_paths:
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"File not found: {path}")
+
+        # 画像ファイルと一般ファイルを分類
+        image_extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".bmp", ".heic", ".heif"}
+        image_files = []
+        other_files = []
+
+        for path in file_paths:
+            ext = os.path.splitext(path)[1].lower()
+            if ext in image_extensions:
+                image_files.append(path)
+            else:
+                other_files.append(path)
+
+        try:
+            # 画像をアップロード
+            if image_files:
+                photo_input = self._selectors.get("chatgpt.upload.photo_input")
+                if photo_input:
+                    await self._page.set_input_files(photo_input, image_files)
+                    logger.info(f"Uploaded {len(image_files)} image(s)")
+                    await self._human.action_delay()
+
+            # 一般ファイルをアップロード
+            if other_files:
+                file_input = self._selectors.get("chatgpt.upload.file_input")
+                if file_input:
+                    await self._page.set_input_files(file_input, other_files)
+                    logger.info(f"Uploaded {len(other_files)} file(s)")
+                    await self._human.action_delay()
+
+            return True
+
+        except Exception as e:
+            logger.error(f"File upload failed: {e}")
+            return False
+
+    async def toggle_web_search(self, enabled: bool = True) -> bool:
+        """
+        ウェブ検索をオン/オフ
+
+        Args:
+            enabled: オンにする場合True
+
+        Returns:
+            成功した場合True
+        """
+        try:
+            web_search_button = self._selectors.get("chatgpt.upload.web_search_button")
+            if not web_search_button:
+                return False
+
+            button = await self._page.query_selector(web_search_button)
+            if not button:
+                return False
+
+            # 現在の状態を確認
+            aria_pressed = await button.get_attribute("aria-pressed")
+            is_active = aria_pressed == "true"
+
+            if is_active != enabled:
+                await button.click()
+                await self._human.action_delay()
+                logger.info(f"Web search {'enabled' if enabled else 'disabled'}")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Toggle web search failed: {e}")
+            return False
+
+    # =========================================================================
     # ユーティリティ
     # =========================================================================
 

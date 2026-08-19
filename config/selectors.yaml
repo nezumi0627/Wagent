@@ -62,6 +62,27 @@ chatgpt:
       - "a[href*='/login']"
       - "a[href*='/auth']"
 
+  # ファイルアップロード関連
+  upload:
+    # ファイル追加ボタン（+ ボタン）
+    action_button: "button[aria-label='ファイルなどを追加']"
+    # 写真追加ボタン
+    add_photos_button: "button[aria-label='写真を追加']"
+    # ファイル選択ボタン
+    files_button: "button[aria-label='ファイル']"
+    # ウェブ検索ボタン
+    web_search_button: "button[aria-label='ウェブ検索']"
+    # 画像作成ボタン
+    create_image_button: "button[aria-label='画像を作成']"
+    # Deep Research ボタン
+    deep_research_button: "button[aria-label='Deep Research']"
+    # ファイル入力（画像）
+    photo_input: "#mobile-composer-photos-input"
+    # ファイル入力（一般ファイル）
+    file_input: "#mobile-composer-files-input"
+    # ファイル入力（カメラ）
+    camera_input: "#mobile-composer-camera-input"
+
   # タイミング設定 (ミリ秒)
   timing:
     typing_delay_min: 30

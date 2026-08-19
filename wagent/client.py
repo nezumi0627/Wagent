@@ -152,6 +152,8 @@ class WagentClient:
         message: str,
         new_conversation: bool = False,
         timeout_ms: Optional[int] = None,
+        files: Optional[list[str]] = None,
+        web_search: bool = False,
     ) -> ChatResult:
         """
         メッセージを送信し、レスポンスを取得
@@ -160,32 +162,46 @@ class WagentClient:
             message: 送信するプロンプト
             new_conversation: 新しい会話を開始するかどうか
             timeout_ms: レスポンス待機タイムアウト（ミリ秒）
+            files: アップロードするファイルパスのリスト
+            web_search: ウェブ検索を有効にするかどうか
 
         Returns:
             ChatResult オブジェクト
         """
-        payload = {
+        payload: dict[str, Any] = {
             "message": message,
             "new_conversation": new_conversation,
         }
         if timeout_ms is not None:
             payload["timeout_ms"] = timeout_ms
+        if files is not None:
+            payload["files"] = files
+        if web_search:
+            payload["web_search"] = True
 
         response = self._request("POST", "/v1/chat", json=payload)
         return ChatResult.from_dict(response)
 
-    def ask(self, message: str, new_conversation: bool = False) -> Optional[str]:
+    def ask(
+        self,
+        message: str,
+        new_conversation: bool = False,
+        files: Optional[list[str]] = None,
+        web_search: bool = False,
+    ) -> Optional[str]:
         """
         シンプルなインターフェース - メッセージを送信してテキストのみを返す
 
         Args:
             message: 送信するプロンプト
             new_conversation: 新しい会話を開始するかどうか
+            files: アップロードするファイルパスのリスト
+            web_search: ウェブ検索を有効にするかどうか
 
         Returns:
             レスポンステキスト、エラー時はNone
         """
-        result = self.chat(message, new_conversation)
+        result = self.chat(message, new_conversation, files=files, web_search=web_search)
         if result.success:
             return result.message
         logger.error(f"Chat failed: {result.error}")
@@ -316,6 +332,8 @@ class WagentClient:
 def ask_chatgpt(
     prompt: str,
     server_url: str = "http://127.0.0.1:8765",
+    files: Optional[list[str]] = None,
+    web_search: bool = False,
 ) -> Optional[str]:
     """
     ワンショットでChatGPTに質問する便利関数
@@ -323,9 +341,11 @@ def ask_chatgpt(
     Args:
         prompt: プロンプト
         server_url: WagentサーバーのURL
+        files: アップロードするファイルパスのリスト
+        web_search: ウェブ検索を有効にするかどうか
 
     Returns:
         レスポンステキスト
     """
     with WagentClient(server_url) as client:
-        return client.ask(prompt)
+        return client.ask(prompt, files=files, web_search=web_search)
