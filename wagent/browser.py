@@ -652,6 +652,9 @@ class BrowserController:
         if not file_paths:
             return True
 
+        if not self.is_logged_in():
+            raise RuntimeError("Not logged in. Please log in to ChatGPT first.")
+
         logger.info(f"Uploading {len(file_paths)} files...")
 
         # ファイルの存在確認
@@ -672,28 +675,23 @@ class BrowserController:
             else:
                 other_files.append(path)
 
-        try:
-            # 画像をアップロード
-            if image_files:
-                photo_input = self._selectors.get("chatgpt.upload.photo_input")
-                if photo_input:
-                    await self._page.set_input_files(photo_input, image_files)
-                    logger.info(f"Uploaded {len(image_files)} image(s)")
-                    await self._human.action_delay()
+        # 画像をアップロード
+        if image_files:
+            photo_input = self._selectors.get("chatgpt.upload.photo_input")
+            if photo_input:
+                await self._page.set_input_files(photo_input, image_files)
+                logger.info(f"Uploaded {len(image_files)} image(s)")
+                await self._human.action_delay()
 
-            # 一般ファイルをアップロード
-            if other_files:
-                file_input = self._selectors.get("chatgpt.upload.file_input")
-                if file_input:
-                    await self._page.set_input_files(file_input, other_files)
-                    logger.info(f"Uploaded {len(other_files)} file(s)")
-                    await self._human.action_delay()
+        # 一般ファイルをアップロード
+        if other_files:
+            file_input = self._selectors.get("chatgpt.upload.file_input")
+            if file_input:
+                await self._page.set_input_files(file_input, other_files)
+                logger.info(f"Uploaded {len(other_files)} file(s)")
+                await self._human.action_delay()
 
-            return True
-
-        except Exception as e:
-            logger.error(f"File upload failed: {e}")
-            return False
+        return True
 
     async def toggle_web_search(self, enabled: bool = True) -> bool:
         """

@@ -230,15 +230,7 @@ async def send_chat(request: ChatRequest) -> ChatResponse:
 
         # ファイルアップロード
         if request.files:
-            uploaded = await app_state.browser.upload_files(request.files)
-            if not uploaded:
-                return ChatResponse(
-                    success=False,
-                    error="File upload failed",
-                    status=ResponseStatus.ERROR,
-                    elapsed_seconds=time.time() - start_time,
-                    prompt_length=prompt_length,
-                )
+            await app_state.browser.upload_files(request.files)
 
         # プロンプト送信
         await app_state.browser.send_prompt(request.message)
