@@ -95,7 +95,7 @@ export class ChatGPTWebProvider implements WagentProvider {
       if (request.metadata?.webSearch === true) await toggleSearch(page);
       const attachments = Array.isArray(request.metadata?.attachments) ? request.metadata.attachments.filter((value): value is string => typeof value === "string") : [];
       if (attachments.length) {
-        const files = attachments.map(resolve);
+        const files = attachments.map(file => resolve(file));
         for (const file of files) if (!existsSync(file)) throw new Error(`Attachment not found: ${file}`);
         const input = page.locator('input[type="file"]').last();
         if (!await input.count()) throw new Error("ChatGPT file input was not found.");
