@@ -2,36 +2,55 @@
 
 **A lightweight, provider-agnostic AI runtime for Web providers, APIs, local models, Tools and Skills.**
 
-Wagent started as a ChatGPT Web bridge. v0.2 rebuilds the project in TypeScript and turns that single-provider bridge into a composable runtime: Agent/Runtime → Router → Provider → Transport.
-
-## Why this architecture
-
-- one normalized event protocol for Web UI automation, official APIs and OpenAI-compatible servers
-- capability-driven routing instead of provider-name conditionals
-- provider SDK for third-party adapters
-- built-in Skills loader (`SKILL.md`)
-- OpenAI-compatible server facade
-- session-aware Web providers
-- AI-friendly repository instructions in `AGENTS.md`
-- Bun + TypeScript, with a deliberately small dependency surface
+Wagent started as a ChatGPT Web bridge. v0.2 rebuilds the project in TypeScript and turns the original single-provider bridge into a composable runtime: Agent/Runtime → Router → Provider → Transport.
 
 ## Included providers
 
-- `deepseek-web` — integrated from `deepseek-web-harness`; browser-profile login, conversation continuation, DeepThink/search/files where the UI exposes them
+- `chatgpt-web` — the original Wagent use case, rebuilt as a provider with persistent profiles, conversations, files and optional Web search
+- `deepseek-web` — integrated/refactored from `deepseek-web-harness`, including conversation continuation, DeepThink/search/files where the live UI exposes them
 - `openai-compatible` — OpenAI/OpenRouter/Ollama-compatible HTTP endpoints through one adapter
 
-The provider SDK is intentionally generic so ChatGPT Web, Anthropic, Gemini Web and future providers can be added without changing runtime internals.
+Every provider emits the same normalized event protocol and declares capabilities, so runtime code never needs `if provider === ...` branches.
+
+## Why this architecture
+
+- one event model for browser automation, APIs and local endpoints
+- capability-driven routing and `provider/model` addressing
+- publishable provider SDK/packages
+- first-class `SKILL.md` loading and selection
+- Wagent-native plus OpenAI-compatible HTTP APIs, including SSE streaming when the provider can stream
+- persistent runtime sessions with opaque provider state
+- root `AGENTS.md` plus AI-specific architecture/authoring docs
+- Bun + strict TypeScript with a deliberately small dependency surface
 
 ## Quick start
 
 ```bash
+git clone https://github.com/nezumi0627/Wagent.git
+cd Wagent
 bun install
 bun run start
 ```
 
-Server defaults to `127.0.0.1:8765`.
+Server defaults to `127.0.0.1:8765`. Interactive mode:
 
-OpenAI-compatible provider example:
+```bash
+bun run cli
+```
+
+Use a Web provider:
+
+```json
+{
+  "model": "chatgpt-web/default",
+  "messages": [{ "role": "user", "content": "Hello" }],
+  "metadata": { "profile": "default", "webSearch": false }
+}
+```
+
+The browser uses persistent data under `~/.wagent/providers/...`. If login is required, sign in in the launched Chrome/Edge profile and retry. Set `WAGENT_BROWSER` to override the browser executable.
+
+Use an OpenAI-compatible endpoint:
 
 ```bash
 export WAGENT_OPENAI_BASE_URL=https://api.openai.com/v1
@@ -40,13 +59,20 @@ export WAGENT_DEFAULT_PROVIDER=openai-compatible
 bun run start
 ```
 
-DeepSeek Web login uses a persistent local browser profile. Start the CLI and send a DeepSeek request; if login is required, sign in to the launched browser. Browser/profile data stays under `~/.wagent` (or `WAGENT_HOME`).
+## HTTP surface
 
-```bash
-bun run cli
+```text
+GET  /health
+GET  /v1/status
+GET  /v1/providers
+GET  /v1/models
+GET  /v1/skills
+POST /v1/generate
+POST /v1/chat                 # legacy Wagent-compatible shape
+POST /v1/chat/completions     # OpenAI-compatible shape
 ```
 
-## Native API
+Native example:
 
 ```bash
 curl -X POST http://127.0.0.1:8765/v1/generate \
@@ -54,16 +80,7 @@ curl -X POST http://127.0.0.1:8765/v1/generate \
   -d '{"model":"deepseek-web/default","messages":[{"role":"user","content":"hello"}]}'
 ```
 
-OpenAI-compatible clients can use:
-
-```text
-POST /v1/chat/completions
-GET  /v1/models
-GET  /health
-GET  /v1/providers
-```
-
-Model IDs use `provider/model`, for example `deepseek-web/default` or `openai-compatible/gpt-5`.
+Model IDs use `provider/model`. `auto` lets the Router select a provider that satisfies required capabilities.
 
 ## Repository map
 
@@ -76,18 +93,19 @@ packages/
   runtime/              routing, execution and sessions
   skills/               SKILL.md parser/loader
   providers/
+    chatgpt-web/         ChatGPT Web adapter
     deepseek-web/        DeepSeek Web adapter
     openai-compatible/   OpenAI/OpenRouter/Ollama style APIs
-skills/                  user/agent-readable skills
-docs/                    architecture and extension docs
+skills/                  human/agent-readable Skills
+docs/                    architecture, provider and AI-agent docs
 ```
 
-See `AGENTS.md` before asking an AI coding agent to modify Wagent. See `docs/architecture.md` for dependency rules and extension points.
+For AI coding tools, start with `AGENTS.md`; it intentionally tells an agent what to read without dumping the whole repository into context. Provider authoring is documented in `docs/provider-authoring.md` and AI-agent usage in `docs/ai-agents.md`.
 
 ## Security and service terms
 
-Web providers automate third-party web interfaces and are unofficial. UI selectors can break without warning. Users are responsible for complying with applicable service terms, laws and account policies. Never commit `.wagent/`, browser profiles, cookies or API keys.
+Web providers automate unofficial third-party web interfaces and may break when those UIs change. Users are responsible for complying with applicable service terms, laws and account policies. Never commit `.wagent/`, browser profiles, cookies, tokens or API keys.
 
 ## License
 
-MIT. The DeepSeek Web provider incorporates and refactors code from the MIT-licensed `nezumi0627/deepseek-web-harness`; attribution is retained in `THIRD_PARTY_NOTICES.md`.
+MIT. The DeepSeek Web provider incorporates/refactors MIT-licensed work from `nezumi0627/deepseek-web-harness`; attribution is retained in `THIRD_PARTY_NOTICES.md`.
