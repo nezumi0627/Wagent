@@ -1,5 +1,7 @@
 # Contributing to Wagent
 
+Thank you for your interest in contributing to Wagent! 🎉
+
 Wagent welcomes provider adapters, Skills, runtime improvements and compatibility fixes.
 
 Read `AGENTS.md` and `docs/architecture.md` first. Install with `bun install`, then run `bun run check` before opening a PR.
