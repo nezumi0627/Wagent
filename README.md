@@ -9,6 +9,7 @@ Wagent started as a ChatGPT Web bridge. v0.2 rebuilds the project in TypeScript 
 - `chatgpt-web` — the original Wagent use case, rebuilt as a provider with persistent profiles, conversations, files and optional Web search
 - `deepseek-web` — integrated/refactored from `deepseek-web-harness`, including conversation continuation, DeepThink/search/files where the live UI exposes them
 - `openai-compatible` — OpenAI/OpenRouter/Ollama-compatible HTTP endpoints through one adapter
+- `anthropic` — native Anthropic Messages API adapter with streaming, reasoning/thinking normalization and tool-use events
 
 Every provider emits the same normalized event protocol and declares capabilities, so runtime code never needs `if provider === ...` branches.
 
@@ -18,7 +19,7 @@ Every provider emits the same normalized event protocol and declares capabilitie
 - capability-driven routing and `provider/model` addressing
 - publishable provider SDK/packages
 - first-class `SKILL.md` loading and selection
-- Wagent-native plus OpenAI-compatible HTTP APIs, including SSE streaming when the provider can stream
+- Wagent-native, OpenAI-compatible and Anthropic-compatible HTTP surfaces
 - persistent runtime sessions with opaque provider state
 - root `AGENTS.md` plus AI-specific architecture/authoring docs
 - Bun + strict TypeScript with a deliberately small dependency surface
@@ -59,6 +60,25 @@ export WAGENT_DEFAULT_PROVIDER=openai-compatible
 bun run start
 ```
 
+Use Anthropic directly as a provider:
+
+```bash
+export WAGENT_ANTHROPIC_API_KEY=...
+export WAGENT_DEFAULT_PROVIDER=anthropic
+bun run start
+```
+
+Then use `anthropic/<model-id>` through Wagent-native APIs, or point a Claude/Anthropic client at Wagent's `/v1/messages` compatibility endpoint. The server accepts the normal Messages-style fields such as `model`, `messages`, `system`, `max_tokens`, `stream`, `temperature`, and `tools`.
+
+Example:
+
+```bash
+curl -X POST http://127.0.0.1:8765/v1/messages \
+  -H 'content-type: application/json' \
+  -H 'anthropic-version: 2023-06-01' \
+  -d '{"model":"claude-sonnet-4-5","max_tokens":512,"messages":[{"role":"user","content":"Hello from Wagent"}]}'
+```
+
 ## HTTP surface
 
 ```text
@@ -70,6 +90,7 @@ GET  /v1/skills
 POST /v1/generate
 POST /v1/chat                 # legacy Wagent-compatible shape
 POST /v1/chat/completions     # OpenAI-compatible shape
+POST /v1/messages             # Anthropic Messages-compatible shape
 ```
 
 Native example:
@@ -82,12 +103,23 @@ curl -X POST http://127.0.0.1:8765/v1/generate \
 
 Model IDs use `provider/model`. `auto` lets the Router select a provider that satisfies required capabilities.
 
+## Claude-oriented development
+
+`skills/claude/SKILL.md` provides Claude-oriented execution guidance while remaining provider-neutral at runtime. `AGENTS.md` remains the canonical repository instruction file, so Claude Code and other coding agents can start from a small, stable source of project rules instead of loading the entire repository.
+
+The Anthropic compatibility layer translates Wagent events into Messages API concepts:
+
+- `text.delta` → text content block deltas
+- `tool.call` → `tool_use` blocks
+- usage → Anthropic-style token usage
+- streaming → `message_start`, content-block events, `message_delta`, `message_stop`
+
 ## Repository map
 
 ```text
 apps/
   cli/                  interactive client
-  server/               Hono HTTP/OpenAI-compatible facade
+  server/               Hono HTTP compatibility facades
 packages/
   provider-sdk/         provider contract, events and capability model
   runtime/              routing, execution and sessions
@@ -96,6 +128,7 @@ packages/
     chatgpt-web/         ChatGPT Web adapter
     deepseek-web/        DeepSeek Web adapter
     openai-compatible/   OpenAI/OpenRouter/Ollama style APIs
+    anthropic/           Anthropic Messages API adapter
 skills/                  human/agent-readable Skills
 docs/                    architecture, provider and AI-agent docs
 ```
@@ -104,7 +137,7 @@ For AI coding tools, start with `AGENTS.md`; it intentionally tells an agent wha
 
 ## Security and service terms
 
-Web providers automate unofficial third-party web interfaces and may break when those UIs change. Users are responsible for complying with applicable service terms, laws and account policies. Never commit `.wagent/`, browser profiles, cookies, tokens or API keys.
+Web providers automate unofficial third-party web interfaces and may break when those UIs change. API providers use credentials supplied through environment variables. Users are responsible for complying with applicable service terms, laws and account policies. Never commit `.wagent/`, browser profiles, cookies, tokens or API keys.
 
 ## License
 
