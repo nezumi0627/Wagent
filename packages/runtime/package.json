@@ -1,0 +1,1 @@
+{"name":"@wagent/runtime","version":"0.2.0","type":"module","exports":"./src/index.ts","dependencies":{"@wagent/provider-sdk":"workspace:*","@wagent/skills":"workspace:*"}}

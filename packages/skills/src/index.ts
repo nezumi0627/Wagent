@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { WagentMessage } from "../../provider-sdk/src/index.ts";
 
 export interface Skill {
   name: string;
@@ -46,7 +47,7 @@ export function selectSkills(prompt: string, skills: Skill[], explicit: string[]
   return skills.filter(skill => [skill.name, skill.description, ...skill.tags].some(term => term && haystack.includes(term.toLowerCase())));
 }
 
-export function applySkills(messages: { role: string; content: string }[], skills: Skill[]): { role: string; content: string }[] {
+export function applySkills(messages: WagentMessage[], skills: Skill[]): WagentMessage[] {
   if (!skills.length) return messages;
   const instructions = skills.map(skill => `# Skill: ${skill.name}\n${skill.instructions}`).join("\n\n");
   return [{ role: "system", content: `Wagent Skills:\n\n${instructions}` }, ...messages];
