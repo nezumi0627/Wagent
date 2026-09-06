@@ -1,61 +1,9 @@
 # Contributing to Wagent
 
-Thank you for your interest in contributing to Wagent! 🎉
+Wagent welcomes provider adapters, Skills, runtime improvements and compatibility fixes.
 
-## Development Setup
+Read `AGENTS.md` and `docs/architecture.md` first. Install with `bun install`, then run `bun run check` before opening a PR.
 
-1. Clone the repository
-```bash
-git clone https://github.com/nezumi0627/wagent.git
-cd wagent
-```
+Provider PRs should declare capabilities accurately, avoid leaking credentials, normalize all output into Wagent events, and include tests for request/event normalization where practical. UI automation changes should explain the manual verification performed because third-party web interfaces are not stable CI targets.
 
-2. Install Rye (if not already installed)
-```bash
-curl -sSf https://rye.astral.sh/get | bash
-```
-
-3. Install dependencies
-```bash
-rye sync
-```
-
-4. Install Playwright browser
-```bash
-rye run playwright install chromium
-```
-
-## Running Tests
-
-```bash
-rye run pytest
-```
-
-## Code Style
-
-We use Ruff for linting:
-```bash
-rye run ruff check wagent/
-rye run ruff format wagent/
-```
-
-## Pull Request Guidelines
-
-1. Create a feature branch from `main`
-2. Make your changes
-3. Run tests and linting
-4. Submit a PR with a clear description
-
-## Reporting Issues
-
-Please include:
-- Python version
-- Operating system
-- Steps to reproduce
-- Error messages (if any)
-
-## ⚠️ Important Notes
-
-- **Do not include browser session data** (`browser_data/`) in commits
-- **Test locally** before submitting PRs
-- Keep changes focused and atomic
+Keep commits focused. Provider-specific selectors, authentication and workarounds belong in that provider package; runtime changes should remain provider-neutral.
