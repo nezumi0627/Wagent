@@ -1,0 +1,32 @@
+name: Startup Smoke Test
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  startup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.1
+      - run: bun install --frozen-lockfile
+      - name: Start Wagent and verify health
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun run start > /tmp/wagent.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true; cat /tmp/wagent.log' EXIT
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8765/health > /tmp/health.json; then
+              cat /tmp/health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          echo 'Wagent did not become healthy in time.' >&2
+          exit 1
