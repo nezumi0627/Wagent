@@ -3,7 +3,10 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
-  "packageManager": "bun@1.2.22",
+  "packageManager": "bun@1.4.1",
+  "engines": {
+    "bun": ">=1.4.1"
+  },
   "workspaces": ["apps/*", "packages/*", "packages/providers/*"],
   "scripts": {
     "dev": "bun --watch apps/server/src/index.ts",
@@ -19,7 +22,7 @@
     "zod": "^4.1.5"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.21",
+    "@types/bun": "^1.4.1",
     "typescript": "^5.9.2"
   }
 }
