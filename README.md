@@ -1,26 +1,33 @@
-# Wagent - Web-Agent Bridge for ChatGPT
+# Wagent - Web-Agent Bridge & AI Runtime
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
-![Python](https://img.shields.io/badge/python-3.10+-green)
+![Version](https://img.shields.io/badge/version-0.2.0-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-3178C6)
+![Bun](https://img.shields.io/badge/Bun-1.2+-black)
 ![License](https://img.shields.io/badge/license-MIT-yellow)
 
-**Wagent** は、Web版 ChatGPT を **あたかも API のように扱う** ためのブリッジサーバーです。
+**Wagent** は、Web版 ChatGPT などの AI サービスを **あたかも API のように扱う** ために始まった Web-Agent Bridge です。
 
-Playwright によるブラウザ自動化を用いて Web UI にログイン・セッションを維持し、
-外部のエージェントやプログラムから HTTP 経由で ChatGPT を操作できます。
+現在の Wagent は、その思想をそのまま広げ、ChatGPT Web / DeepSeek Web / Anthropic / OpenAI互換API / ローカルモデルなどを、ひとつの共通インターフェースから扱える **軽量なマルチプロバイダ AI Runtime** へ進化しています。
 
-> ⚠️ 本プロジェクトは研究・個人利用向けです。商用利用や大規模運用は推奨されません。
+Playwright によるブラウザ自動化、API Provider、セッション管理、Skills、共通イベント、OpenAI / Anthropic 互換APIをまとめ、外部のエージェントやプログラムから HTTP や CLI 経由で AI を操作できます。
+
+> ⚠️ Web Provider は研究・個人利用を主目的としています。第三者サービスの利用規約・法令・アカウントポリシーを確認し、自己責任で利用してください。
 
 ---
 
 ## ✨ 特徴
 
-- 🌐 **Web版 ChatGPT を API 的に利用**
-- 🔐 **ログイン状態を永続化**（再ログイン不要）
-- 🧠 **会話コンテキストを維持 / リセット可能**
-- 🕹 **対話モード + API サーバーモード両対応**
-- ⚙️ **FastAPI ベースで拡張しやすい設計**
-- 🧪 **Playwright による堅牢な UI 操作**
+- 🌐 **Web版 ChatGPT / DeepSeek を API 的に利用**
+- 🔌 **Anthropic / OpenAI互換 Provider に対応**
+- 🔐 **ブラウザのログイン状態を永続化**
+- 🧠 **会話コンテキスト / セッションを維持**
+- 🧩 **Providerを差し替え可能なマルチプロバイダ設計**
+- 🛠 **Tools / Skills を Provider から分離**
+- 📡 **Wagent Native / OpenAI / Anthropic 互換API**
+- 🌊 **ストリーミング応答を共通イベントへ正規化**
+- 🤖 **`AGENTS.md` / `CLAUDE.md` / `SKILL.md` を備えたAIフレンドリーな構成**
+- 🕹 **対話CLI + APIサーバーモード両対応**
+- ⚡ **Bun + TypeScript による軽量なRuntime**
 
 ---
 
@@ -28,17 +35,43 @@ Playwright によるブラウザ自動化を用いて Web UI にログイン・�
 
 ```mermaid
 flowchart LR
-    Agent["Agent / Bot / Script"]
-    Wagent["Wagent Server"]
-    ChatGPT["ChatGPT Web UI"]
+    Agent["Agent / Bot / Script / Claude Code"]
+    Wagent["Wagent Runtime"]
+    Router["Router"]
 
-    Agent <-->|HTTP / JSON| Wagent
-    Wagent <-->|Playwright| ChatGPT
+    ChatGPT["ChatGPT Web"]
+    DeepSeek["DeepSeek Web"]
+    Anthropic["Anthropic API"]
+    OpenAI["OpenAI-compatible API"]
+
+    Agent <-->|HTTP / JSON / SSE| Wagent
+    Wagent --> Router
+    Router --> ChatGPT
+    Router --> DeepSeek
+    Router --> Anthropic
+    Router --> OpenAI
 ```
 
-- **Agent**: curl.exe / Python / Bot / 自作クライアント
-- **Wagent**: セッション管理 + UI 操作 + API 提供
-- **ChatGPT Web UI**: 実際に操作されるブラウザ
+- **Agent**: curl / Bot / Claude系クライアント / OpenAI SDK / 自作クライアント
+- **Wagent**: セッション管理 + Skills + ルーティング + 共通イベント + API提供
+- **Provider**: ChatGPT Web / DeepSeek Web / Anthropic / OpenAI互換サービスなど
+- **Web Provider**: Playwrightを利用して実際のWeb UIを操作
+
+内部の依存方向はシンプルに保ちます。
+
+```text
+Agent / App
+    ↓
+Wagent Runtime
+    ↓
+Router
+    ↓
+Provider
+    ↓
+Transport / Browser / HTTP
+```
+
+Provider固有の処理をRuntimeへ持ち込まず、すべてのProviderは共通の `WagentEvent` を返します。
 
 ---
 
@@ -51,167 +84,225 @@ git clone https://github.com/nezumi0627/Wagent.git
 cd Wagent
 ```
 
-### 2️⃣ Python 依存関係のインストール
+### 2️⃣ 依存関係をインストール
 
 ```bash
-pip install -r requirements.txt
+bun install
 ```
 
-### 3️⃣ Playwright ブラウザのセットアップ
+### 3️⃣ 起動
 
 ```bash
-playwright install chromium
+bun run start
 ```
+
+デフォルトでは `127.0.0.1:8765` で起動します。
 
 ---
 
 ## 🚀 使い方
 
-### 🔑 初回ログイン（対話モード）
+### 🔑 Web Provider の初回ログイン
 
-初回は **手動ログインが必須** です。
+ChatGPT Web / DeepSeek Web を利用する場合、初回はブラウザ上での **手動ログインが必要** です。
 
 ```bash
-python -m wagent.main --interactive
+bun run cli
 ```
 
 手順:
 
-1. Chromium ブラウザが起動
-2. ChatGPT にログイン
-3. コンソールで Enter を押す
-4. 対話モードで送信テスト
+1. Wagent から Web Provider を選択
+2. Chrome / Edge が起動
+3. 対象サービスへログイン
+4. ログイン済みブラウザプロファイルを Wagent が保持
+5. 以降は同じプロファイルを再利用
 
-ログイン情報は `browser_data/` に保存されます。
+ブラウザプロファイルやセッション情報は原則 `~/.wagent/` 以下に保存され、Gitには含まれません。
 
 ---
 
 ### 🖥 API サーバーモード
 
-ログイン完了後は API サーバーとして起動できます。
-
 ```bash
-python -m wagent.main --server
+bun run start
 ```
 
 カスタム設定:
 
 ```bash
-python -m wagent.main --server --host 0.0.0.0 --port 8765
+WAGENT_HOST=0.0.0.0 WAGENT_PORT=8765 bun run start
+```
+
+---
+
+### 🕹 対話モード
+
+```bash
+bun run cli
+```
+
+CLIからProvider / Modelを切り替えて対話できます。
+
+---
+
+## 🔌 対応 Provider
+
+### ChatGPT Web
+
+元のWagentの中心機能です。
+
+```text
+chatgpt-web/default
+```
+
+ブラウザログイン、会話継続、ファイル、Web検索などをProvider内部へ閉じ込めています。
+
+### DeepSeek Web
+
+`deepseek-web-harness` の実装・知見をWagentのProvider構造へ統合しています。
+
+```text
+deepseek-web/default
+```
+
+DeepThink、検索、ファイル、会話継続など、Web UIで利用可能な機能をCapabilityとして公開します。
+
+### Anthropic
+
+Anthropic Messages APIを直接利用できます。
+
+```bash
+export WAGENT_ANTHROPIC_API_KEY=...
+```
+
+```text
+anthropic/<model-id>
+```
+
+### OpenAI-compatible
+
+OpenAI、OpenRouter、Ollama、LM Studio、vLLMなど、OpenAI互換APIを同じProviderから接続できます。
+
+```bash
+export WAGENT_OPENAI_BASE_URL=https://api.openai.com/v1
+export WAGENT_OPENAI_API_KEY=...
+```
+
+```text
+openai-compatible/<model-id>
 ```
 
 ---
 
 ## 📡 API エンドポイント
 
-| Method | Path             | Description                    |
-| ------ | ---------------- | ------------------------------ |
-| POST   | `/v1/chat`       | メッセージ送信 & 応答取得      |
-| GET    | `/v1/status`     | ログイン状態・ブラウザ生存確認 |
-| DELETE | `/v1/session`    | 会話コンテキストのリセット     |
-| GET    | `/v1/screenshot` | 現在のブラウザ画面を取得       |
-| GET    | `/health`        | ヘルスチェック                 |
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/health` | ヘルスチェック |
+| GET | `/v1/status` | Wagent / Provider / Session 状態 |
+| GET | `/v1/providers` | Provider一覧 |
+| GET | `/v1/models` | Model一覧 |
+| GET | `/v1/skills` | Skill一覧 |
+| POST | `/v1/generate` | Wagent Native API |
+| POST | `/v1/chat` | 旧Wagent互換の簡易Chat API |
+| POST | `/v1/chat/completions` | OpenAI Chat Completions互換 |
+| POST | `/v1/messages` | Anthropic Messages互換 |
 
 ---
 
 ## 📤 API 使用例
 
-### メッセージ送信
+### 元Wagent風の簡単なメッセージ送信
 
 ```bash
-curl.exe -X POST "http://127.0.0.1:8765/v1/chat" -H "Content-Type: application/json" -d '{"message":"Hello, ChatGPT!","new_conversation":false}'
+curl.exe -X POST "http://127.0.0.1:8765/v1/chat" \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Hello, ChatGPT!","model":"chatgpt-web/default"}'
 ```
 
-### ファイルアップロード
+### Wagent Native API
 
 ```bash
-curl.exe -X POST "http://127.0.0.1:8765/v1/chat" -H "Content-Type: application/json" -d '{"message":"この画像を説明してください","files":["C:\\Users\\ren11\\Pictures\\photo.png"]}'
+curl.exe -X POST "http://127.0.0.1:8765/v1/generate" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"deepseek-web/default","messages":[{"role":"user","content":"こんにちは"}]}'
 ```
 
-### ウェブ検索を有効化
+### Anthropic Messages互換
 
 ```bash
-curl.exe -X POST "http://127.0.0.1:8765/v1/chat" -H "Content-Type: application/json" -d '{"message":"今日の天気は？","web_search":true}'
+curl.exe -X POST "http://127.0.0.1:8765/v1/messages" \
+  -H "Content-Type: application/json" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{"model":"claude-sonnet-4-5","max_tokens":512,"messages":[{"role":"user","content":"Hello from Wagent"}]}'
 ```
 
-### ステータス確認
+### OpenAI互換
 
 ```bash
-curl.exe http://127.0.0.1:8765/v1/status
-```
-
-### 会話リセット
-
-```bash
-curl.exe -X DELETE http://127.0.0.1:8765/v1/session
+curl.exe -X POST "http://127.0.0.1:8765/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"openai-compatible/gpt-5","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
 ---
 
-## 🐍 Python クライアント
+## 🤖 AI / Agent 向け
 
-```python
-from wagent.client import WagentClient, ask_chatgpt
+Wagentは、人間だけでなくCoding Agent自身が理解・改造しやすいリポジトリを目指しています。
 
-client = WagentClient()
+AIがWagentを編集するときは、まず以下を読みます。
 
-status = client.status()
-print("Logged in:", status["logged_in"])
-
-# メッセージ送信
-res = client.chat("Pythonでフィボナッチ数列を書いて")
-print(res["message"])
-
-# ファイルアップロード
-res = client.chat("この画像を説明してください", files=["C:/Users/ren11/Pictures/photo.png"])
-print(res["message"])
-
-# ウェブ検索を有効化
-res = client.chat("今日の天気は？", web_search=True)
-print(res["message"])
-
-# 便利関数
-answer = ask_chatgpt("1+1は？")
-print(answer)
+```text
+AGENTS.md
+   ↓
+CLAUDE.md (Claude系の場合)
+   ↓
+docs/architecture.md
+   ↓
+変更対象のpackage
+   ↓
+関連するskills/*/SKILL.md
 ```
 
----
+Provider固有コードをRuntimeへ漏らさず、AIが変更範囲を狭く判断できる構成にしています。
 
-## ⚙️ 設定ファイル
+### Skills
 
-### `config/settings.yaml`
-
-```yaml
-browser:
-  headless: false
-  user_data_dir: "./browser_data"
-
-rate_limit:
-  requests_per_minute: 10
-  min_interval: 3
+```text
+skills/
+├── concise/
+├── claude/
+└── wagent-contributor/
 ```
 
-### `config/selectors.yaml`
-
-ChatGPT の DOM 構造変更に対応するための CSS セレクタ定義です。
-UI 変更時はここを修正してください。
+`SKILL.md` は単なるドキュメントではなく、Wagent Runtimeから読み込み・選択できる第一級機能です。
 
 ---
 
 ## 📁 ディレクトリ構成
 
-```
+```text
 Wagent/
-├── config/
-├── wagent/
-│   ├── browser.py
-│   ├── server.py
-│   ├── client.py
-│   └── main.py
-├── browser_data/
-├── logs/
-├── screenshots/
-├── requirements.txt
+├── apps/
+│   ├── cli/
+│   └── server/
+├── packages/
+│   ├── provider-sdk/
+│   ├── runtime/
+│   ├── skills/
+│   └── providers/
+│       ├── chatgpt-web/
+│       ├── deepseek-web/
+│       ├── anthropic/
+│       └── openai-compatible/
+├── skills/
+├── docs/
+├── tests/
+├── AGENTS.md
+├── CLAUDE.md
+├── CONTRIBUTING.md
 └── README.md
 ```
 
@@ -221,35 +312,57 @@ Wagent/
 
 > **本ソフトウェアは完全に自己責任で使用してください。**
 
-1. **責任の所在**
+1. **責任の所在**  
    本プロジェクトの作者・コントリビューターは、本ソフトウェアの使用・不使用・使用不能によって生じたいかなる損害（直接的・間接的・偶発的・特別・結果的損害を含む）についても、一切の責任を負いません。
 
-2. **利用規約・法令の遵守**
+2. **利用規約・法令の遵守**  
    利用者は、関連するすべての利用規約・契約・法令・ガイドラインを自身で確認し、遵守する責任を負います。本ソフトウェアは、特定のサービスや規約への適合性を保証するものではありません。
 
-3. **非公式・無保証**
-   本ソフトウェアは公式 API や公式サポートではありません。動作の継続性、正確性、可用性は保証されず、予告なく動作不能になる可能性があります。
+3. **非公式・無保証**  
+   Web Providerは公式 API や公式サポートではありません。第三者Web UIの変更によって、予告なく動作不能になる可能性があります。
 
-4. **アカウント・データの管理**
-   ログイン情報やセッションデータ（`browser_data/` など）の管理は利用者の責任です。第三者への共有、公開リポジトリへのコミット等は行わないでください。
+4. **アカウント・データの管理**  
+   ログイン情報、Cookie、API Key、ブラウザプロファイル、セッションデータの管理は利用者の責任です。第三者への共有、公開リポジトリへのコミット等は行わないでください。
 
-5. **負荷・運用**
-   過度な自動化、短時間での大量リクエスト、常時稼働運用は推奨されません。利用者は自身の運用が及ぼす影響を考慮してください。
+5. **負荷・運用**  
+   過度な自動化、短時間での大量リクエスト、第三者サービスへ過剰な負荷を与える運用は推奨されません。
 
 ---
 
 ## 🛣 今後の予定（Ideas）
 
-- ストリーミング応答対応
-- マルチセッション対応
-- プラグイン / Agent フック機構
-- Docker 対応
+- MCP Runtime / MCP Tool連携
+- Tool SDK
+- Provider Plugin自動Discovery
+- Memory / Context Store
+- Retry / Fallback / Circuit Breaker
+- コスト・速度・Capabilityを考慮したAuto Router
+- Gemini / その他Provider
+- Agent Loop
+- Multi-Agent
+- Docker対応
+- より強いOpenAI / Anthropic互換性
+
+---
+
+## 🧪 開発
+
+```bash
+bun install
+bun run check
+```
+
+`bun run check` はTypeScriptの型チェックとテストを実行します。
+
+Wagentへのコントリビュートに興味を持ってくれてありがとうございます。詳細は `CONTRIBUTING.md` と `AGENTS.md` を参照してください。
 
 ---
 
 ## 📜 ライセンス
 
 MIT License
+
+DeepSeek Web Providerには、MIT Licenseで公開されている `nezumi0627/deepseek-web-harness` の実装・知見を統合しています。詳細は `THIRD_PARTY_NOTICES.md` を参照してください。
 
 ---
 

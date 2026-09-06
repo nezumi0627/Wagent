@@ -1,0 +1,25 @@
+{
+  "name": "wagent",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.2.22",
+  "workspaces": ["apps/*", "packages/*", "packages/providers/*"],
+  "scripts": {
+    "dev": "bun --watch apps/server/src/index.ts",
+    "start": "bun apps/server/src/index.ts",
+    "cli": "bun apps/cli/src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "check": "bun run typecheck && bun test"
+  },
+  "dependencies": {
+    "hono": "^4.9.6",
+    "playwright-core": "^1.55.0",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.21",
+    "typescript": "^5.9.2"
+  }
+}

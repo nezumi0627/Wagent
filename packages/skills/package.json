@@ -1,0 +1,1 @@
+{"name":"@wagent/skills","version":"0.2.0","type":"module","exports":"./src/index.ts","dependencies":{"@wagent/provider-sdk":"workspace:*"}}
