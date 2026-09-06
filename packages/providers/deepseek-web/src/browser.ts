@@ -109,7 +109,7 @@ export async function askDeepSeekWeb(prompt: string, options: DeepSeekWebOptions
     if (options.deepThink !== undefined && !await clickControl(page, ["deepthink", "deep think", "r1", "深く考える"], options.deepThink)) throw new Error("DeepThink control not found.");
     if (options.search !== undefined && !await clickControl(page, ["search", "web search", "検索"], options.search)) throw new Error("Search control not found.");
     if (options.attachments?.length) {
-      const files = options.attachments.map(resolve);
+      const files = options.attachments.map(file => resolve(file));
       for (const file of files) if (!existsSync(file)) throw new Error(`Attachment not found: ${file}`);
       const fileInput = page.locator('input[type="file"]').last();
       if (!await fileInput.count()) throw new Error("File upload control not found.");
