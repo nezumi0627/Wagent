@@ -1,11 +1,40 @@
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { chromium, type Page } from "playwright-core";
 import { capabilities, type GenerateRequest, type ProviderContext, type ProviderModel, type WagentEvent, type WagentProvider } from "../../../provider-sdk/src/index.ts";
 
 const CHATGPT_URL = "https://chatgpt.com/";
+
+const CHATGPT_STEALTH_INIT_SCRIPT = `
+(() => {
+  const defineGetter = (target, key, getter) => {
+    try {
+      Object.defineProperty(target, key, { configurable: true, get: getter });
+    } catch {}
+  };
+
+  defineGetter(Navigator.prototype, "webdriver", () => undefined);
+  defineGetter(navigator, "languages", () => ["ja-JP", "ja", "en-US", "en"]);
+  defineGetter(navigator, "vendor", () => "Google Inc.");
+
+  if (!window.chrome) {
+    Object.defineProperty(window, "chrome", {
+      configurable: true,
+      value: { runtime: {} },
+    });
+  }
+
+  const permissions = navigator.permissions;
+  const originalQuery = permissions?.query?.bind(permissions);
+  if (originalQuery) {
+    permissions.query = parameters => parameters.name === "notifications"
+      ? Promise.resolve({ state: Notification.permission })
+      : originalQuery(parameters);
+  }
+})();
+`;
 
 function browserCandidates(): string[] {
   if (process.platform === "win32") return ["C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe", "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"];
@@ -25,6 +54,29 @@ function findBrowser(): string | undefined {
     const path = result.status === 0 ? String(result.stdout).split(/\r?\n/).find(Boolean)?.trim() : undefined;
     if (path && existsSync(path)) return path;
   }
+}
+
+function browserUserAgent(executablePath: string): string | undefined {
+  let version: string | undefined;
+  if (process.platform === "win32") {
+    const versions = readdirSync(dirname(executablePath), { withFileTypes: true })
+      .filter(entry => entry.isDirectory() && /^\d+\.\d+\.\d+\.\d+$/.test(entry.name))
+      .map(entry => entry.name)
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    version = versions.at(-1);
+  } else {
+    const result = spawnSync(executablePath, ["--version"], { encoding: "utf8", timeout: 3_000 });
+    version = `${result.stdout ?? ""}\n${result.stderr ?? ""}`.match(/(\d+\.\d+\.\d+\.\d+)/)?.[1];
+  }
+  if (!version) return undefined;
+
+  const platform = process.platform === "darwin"
+    ? "Macintosh; Intel Mac OS X 10_15_7"
+    : process.platform === "win32"
+      ? "Windows NT 10.0; Win64; x64"
+      : "X11; Linux x86_64";
+  const edge = /msedge/i.test(executablePath) ? ` Edg/${version}` : "";
+  return `Mozilla/5.0 (${platform}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${version} Safari/537.36${edge}`;
 }
 
 async function assistantMessages(page: Page): Promise<string[]> {
@@ -77,11 +129,19 @@ export class ChatGPTWebProvider implements WagentProvider {
     const userDataDir = join(home, "providers", "chatgpt-web", profileName);
     mkdirSync(userDataDir, { recursive: true });
 
+    const userAgent = browserUserAgent(executablePath);
+
     const browser = await chromium.launchPersistentContext(userDataDir, {
       executablePath,
       headless: process.env.WAGENT_HEADLESS === "1",
-      viewport: null,
+      viewport: { width: 1280, height: 800 },
+      locale: "ja-JP",
+      timezoneId: "Asia/Tokyo",
+      args: ["--disable-blink-features=AutomationControlled", "--no-sandbox", "--disable-dev-shm-usage", "--disable-automation"],
+      ignoreDefaultArgs: ["--enable-automation"],
+      ...(userAgent ? { userAgent } : {}),
     });
+    await browser.addInitScript(CHATGPT_STEALTH_INIT_SCRIPT);
 
     try {
       const page = browser.pages()[0] ?? await browser.newPage();
